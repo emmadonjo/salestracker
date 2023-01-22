@@ -65,15 +65,15 @@ class StockResource extends Resource
         return $table
             ->columns([
                 ImageColumn::make('photo')->label('Image'),
-                TextColumn::make('name'),
-                TextColumn::make('sku'),
-                TextColumn::make('quantity'),
-                TextColumn::make('price'),
-                TextColumn::make('category.name'),
-                TextColumn::make('added_by.name')->label('Added By'),
+                TextColumn::make('name')->sortable(),
+                TextColumn::make('sku')->sortable(),
+                TextColumn::make('quantity')->sortable(),
+                TextColumn::make('price')->sortable(),
+                TextColumn::make('category.name')->sortable(),
+                TextColumn::make('added_by.name')->label('Added By')->sortable(),
                 TextColumn::make('description'),
                 TextColumn::make('created_at')->label('Date Added')
-                    ->dateTime('d-m-Y')
+                    ->dateTime('d-m-Y')->sortable()
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),

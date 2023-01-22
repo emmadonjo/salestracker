@@ -20,7 +20,7 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-collection';
+    protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationGroup = 'Inventory';
 
     public static function form(Form $form): Form
@@ -42,7 +42,7 @@ class CategoryResource extends Resource
                 TextColumn::make('name')->label('Category Name') ->sortable(),
                 TextColumn::make('description')->label('Category Description')->sortable(),
                 TextColumn::make('created_at')->label('Date Added')
-                    ->dateTime('d-m-Y')
+                    ->dateTime('d-m-Y')->sortable()
             ])
             ->filters([
                 //

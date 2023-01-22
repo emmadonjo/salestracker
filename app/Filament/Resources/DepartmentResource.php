@@ -43,7 +43,7 @@ class DepartmentResource extends Resource
                 TextColumn::make('name')->label('Department Name')->sortable(),
                 TextColumn::make('description')->label('Description'),
                 TextColumn::make('created_at')->label('Date Added')
-                    ->dateTime('d-m-Y')
+                    ->dateTime('d-m-Y')->sortable()
             ])
             ->filters([
                 //
