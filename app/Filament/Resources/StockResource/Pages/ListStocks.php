@@ -5,6 +5,7 @@ namespace App\Filament\Resources\StockResource\Pages;
 use App\Filament\Resources\StockResource;
 use Filament\Pages\Actions;
 use Filament\Resources\Pages\ListRecords;
+use App\Filament\Resources\StockResource\Widgets\Stocks\StockStats;
 
 class ListStocks extends ListRecords
 {
@@ -14,6 +15,13 @@ class ListStocks extends ListRecords
     {
         return [
             Actions\CreateAction::make(),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            StockStats::class,
         ];
     }
 }
