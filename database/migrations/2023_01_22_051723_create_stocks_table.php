@@ -15,6 +15,7 @@ return new class extends Migration
     {
         Schema::create('stocks', function (Blueprint $table) {
             $table->id();
+            $table->string('photo')->nullable();
             $table->string('sku');
             $table->string('name')->unique();
             $table->text('description')->nullable();
@@ -24,6 +25,7 @@ return new class extends Migration
                 ->nullOnDelete()->cascadeOnUpdate();
             $table->unsignedInteger('quantity')->default(0);
             $table->float('price', 16)->default(0);
+            $table->softDeletes();
             $table->timestamps();
         });
     }
