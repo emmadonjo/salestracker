@@ -236,9 +236,9 @@ return [
             'have_inline_labels' => false,
         ],
         'footer' => [
-            'should_show_logo' => true,
+            'should_show_logo' => false,
         ],
-        'max_content_width' => 'max-w-7xl',
+        'max_content_width' => '7xl',
         'notifications' => [
             'vertical_alignment' => 'top',
             'alignment' => 'right',

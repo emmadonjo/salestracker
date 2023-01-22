@@ -27,7 +27,7 @@ class CategoryResource extends Resource
     {
         return $form
             ->schema([
-                TextInput::make('name')->required()->label('Category Name')
+                TextInput::make('name')->required()->label('Category Name')->placeholder('Enter Name')
                 ->maxLength(255)->unique(ignoreRecord: true),
                 TextArea::make('description')->label('Description')
                     ->maxLength(500)

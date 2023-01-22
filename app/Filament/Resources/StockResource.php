@@ -10,7 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput\Mask;
 use Filament\Resources\Form;
 use Filament\Resources\Pages\CreateRecord;
@@ -57,7 +57,7 @@ class StockResource extends Resource
                     ->required()->minValue(0),
                 TextInput::make('price')->numeric()->step('0.01')->placeholder('Price')
                     ->required()->minValue(0),
-                MarkdownEditor::make('description')->placeholder('1000 characters max')
+                TextArea::make('description')->placeholder('1000 characters max')
                     ->maxLength(1000),
             ]);
     }
@@ -79,8 +79,8 @@ class StockResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
-                SelectFilter::make('category_id')
-                    ->options(Category::all()->pluck('name', 'id')),
+                SelectFilter::make('category')
+                    ->relationship('category', 'name'),
             ])
             ->actions([
                 ActionGroup::make([
