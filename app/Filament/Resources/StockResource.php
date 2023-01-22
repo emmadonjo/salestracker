@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 use App\Filament\Resources\StockResource\Widgets\Stocks\StockStats;
+use App\Models\Category;
+use Filament\Tables\Filters\SelectFilter;
 
 class StockResource extends Resource
 {
@@ -77,6 +79,8 @@ class StockResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
+                SelectFilter::make('category_id')
+                    ->options(Category::all()->pluck('name', 'id')),
             ])
             ->actions([
                 ActionGroup::make([
