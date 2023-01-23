@@ -13,13 +13,14 @@ class Order extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'amount' => 'float',
         'discount' => 'float',
         'amount_paid' => 'float',
         'subtotal' => 'float',
+        'balance' => 'float',
         'paid_at' => 'datetime'
     ];
 

@@ -66,11 +66,12 @@ class StockResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('sn')->rowIndex(),
                 ImageColumn::make('photo')->label('Image'),
                 TextColumn::make('name')->sortable(),
                 TextColumn::make('sku')->sortable(),
                 TextColumn::make('quantity')->sortable(),
-                TextColumn::make('price')->sortable(),
+                TextColumn::make('price')->sortable()->money('ngn', true),
                 TextColumn::make('category.name')->sortable(),
                 TextColumn::make('added_by.name')->label('Added By')->sortable(),
                 TextColumn::make('description'),

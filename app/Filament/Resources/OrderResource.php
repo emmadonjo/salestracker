@@ -4,15 +4,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
-use App\Models\Customer;
 use App\Models\Order;
 use Filament\Forms;
+use Filament\Forms\Components\Card;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Wizard;
-use Filament\Forms\Components\Wizard\Step;
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
@@ -37,6 +37,34 @@ class OrderResource extends Resource
         return $form
             ->schema([
 
+                Section::make('Order Info')->description('Details of the order.')
+                    ->schema([
+                        TextInput::make('reference')->label('Order Ref.'),
+                        TextInput::make('amount')->label('Order Amount')->numeric(),
+                        TextInput::make('discount')->label('Order Discount')->numeric(),
+                        TextInput::make('subtotal')->label('Subtotal')->numeric(),
+                        TextInput::make('amount_paid')->label('Amount Paid')->numeric(),
+                        TextInput::make('balance')->label('Payment Balance')->numeric(),
+                        TextInput::make('status')->label('Payment Status'),
+                        Select::make('customer_id')->label('Customer')
+                            ->relationship('customer', 'name'),
+                        DateTimePicker::make('paid_at')->label('Payment Date'),
+                        Select::make('user_id')->label('Added By')
+                            ->relationship('staff', 'name'),
+                        DateTimePicker::make('created_at')->label('Order Date'),
+                ])->collapsible()->collapsed(),
+                Section::make('Order Items')
+                    ->description('Items included in this order')
+                    ->schema([
+                        Repeater::make('items')->label('Order Items')
+                            ->relationship()
+                            ->schema([
+                                Select::make('stock_id')->label('Item Name')
+                                    ->relationship('stock', 'name'),
+                                TextInput::make('quantity')->label('Quantity')->numeric(),
+                                TextInput::make('amount')->label('Amount')->numeric()
+                            ])
+                ])->collapsible()->collapsed()
             ]);
     }
 
@@ -44,12 +72,15 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('Sn')->rowIndex(isFromZero:false),
                 TextColumn::make('reference')->label('Order Ref.')->sortable(),
                 TextColumn::make('customer.name')->label('Customer')->sortable(),
-                TextColumn::make('amount')->label('Amount')->sortable(),
-                TextColumn::make('discount')->label('Discount')->sortable(),
-                TextColumn::make('subtotal')->label('Subtotal')->sortable(),
-                TextColumn::make('amount_paid')->label('Amount Paid')->sortable(),
+                TextColumn::make('items_count')->counts('items')->label('Items'),
+                TextColumn::make('amount')->label('Amount')->sortable()->money('ngn', true),
+                TextColumn::make('discount')->label('Discount')->sortable()->money('ngn', true),
+                TextColumn::make('subtotal')->label('Subtotal')->sortable()->money('ngn', true),
+                TextColumn::make('amount_paid')->label('Amount Paid')->sortable()->money('ngn', true),
+                TextColumn::make('balance')->label('Balance')->sortable()->money('ngn', true),
                 BadgeColumn::make('status')
                     ->colors([
                         'success' => 'paid',

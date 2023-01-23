@@ -39,10 +39,23 @@ class CreateOrder extends CreateRecord
         }
     }
 
+    protected function afterCreate(): void
+    {
+        $items = $this->data['items'];
+
+        // deduct items quantity from stock
+        collect($items)->each(function($item){
+            $stock = Stock::find($item['stock_id']);
+            $qty = $stock->quantity - $item['quantity'];
+            $stock->update(['quantity' => $qty]);
+        });
+    }
+
     protected function handleRecordCreation(array $data): Model
     {
         $amount_paid = $data['amount_paid'] ?? 0;
         $amount = $this->calculateAmount($data['items']);
+        $subtotal = $amount - $data['discount'];
 
         $order = static::getModel()::create([
             'user_id' => auth()->id(),
@@ -52,8 +65,9 @@ class CreateOrder extends CreateRecord
             'discount' => $data['discount'],
             'status' => $data['status'] ?? 'unpaid',
             'amount_paid' => $amount_paid,
-            'paid_at' => (int) $amount_paid > 0 ? now() : null,
-            'subtotal' => $amount - $data['discount']
+            'paid_at' => $amount_paid > 0 ? now() : null,
+            'subtotal' => $subtotal,
+            'balance' => $subtotal - $amount_paid
         ]);
 
         if(count($data['items']) > 0){
@@ -62,7 +76,7 @@ class CreateOrder extends CreateRecord
                 $order->items()->create([
                     'stock_id' => $item['stock_id'],
                     'quantity' => $item['quantity'],
-                    'amount' => $stock->price
+                    'amount' => $stock->price * $item['quantity']
                 ]);
             }
         }
@@ -82,11 +96,10 @@ class CreateOrder extends CreateRecord
                         ->options(Stock::all()->pluck('name', 'id'))
                         ->searchable()->placeholder('Select Item'),
                     TextInput::make('quantity')->numeric()->label('Quantity')
-                        ->placeholder('Quantity')->default(0),
-                    // TextInput::make('amount')->numeric()->label('Amount')
-                    //     ->placeholder('Quantity')
-                    //     ->disabled()->dehydrated()
-                ])
+                        ->minValue(1)->default(1)
+                        ->placeholder('Quantity')
+                ])->collapsible()
+                ->createItemButtonLabel('Add Item')
             ]),
             Step::make('Order Details')
                 ->description('Provide the order details')
@@ -115,7 +128,7 @@ class CreateOrder extends CreateRecord
     {
         $amount = 0;
         foreach($data as $item){
-            $amount += Stock::find($item['stock_id'])->price;
+            $amount += Stock::find($item['stock_id'])->price * $item['quantity'];
         }
 
         return (float)$amount;

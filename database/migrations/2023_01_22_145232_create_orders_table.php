@@ -24,6 +24,7 @@ return new class extends Migration
             $table->float('discount', 0)->nullable();
             $table->string('status')->default('unpaid')->comment('paid, part paid, unpaid');
             $table->float('amount_paid', 16)->default(0);
+            $table->float('balance', 16)->default(0);
             $table->softDeletes();
             $table->timestamp('paid_at')->nullable();
             $table->float('subtotal', 16)->default(0);
