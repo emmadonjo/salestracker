@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\RelationManagers;
+use App\Filament\Resources\UserResource\RelationManagers\DepartmentsRelationManager;
 use App\Models\Department;
 use App\Models\User;
 use Filament\Forms;
@@ -13,6 +14,7 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Form;
+use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
 use Filament\Tables;
@@ -23,6 +25,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Livewire\Component as Livewire;
 
 class UserResource extends Resource
 {
@@ -36,7 +39,7 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
-                FileUpload::make('photo')
+                FileUpload::make('profile_photo')
                     ->directory('uploads/users/profile-photos')
                     ->maxSize(2048)->label('Profile Photo')
                     ->image()
@@ -58,14 +61,18 @@ class UserResource extends Resource
                     ->placeholder('username@example.com'),
                 TextInput::make('password')
                     ->password()
-                    ->required()
+                    ->required(function(Livewire $livewire){
+                        return $livewire instanceof CreateRecord;
+                    })
                     ->minLength(8)
                     ->maxLength(255)
                     ->placeholder('********')
                     ->confirmed(),
                 TextInput::make('password_confirmation')
                     ->password()
-                    ->required()
+                    ->required(function(Livewire $livewire){
+                        return $livewire instanceof CreateRecord;
+                    })
                     ->minLength(8)
                     ->maxLength(255)
                     ->placeholder('********')
@@ -81,13 +88,7 @@ class UserResource extends Resource
                         'receptionist' => 'Receptionist',
                         'driver' => 'Driver',
                         'waiter' => 'Waiter'
-                    ]),
-                Select::make('departments')->label('Select Depts.')
-                    ->multiple()
-                    ->options(Department::all()->pluck('name', 'id'))
-                    ->searchable()
-                    ->placeholder('Select Depts.')
-                    ->required()
+                    ])
             ]);
     }
 
@@ -102,9 +103,9 @@ class UserResource extends Resource
                 IconColumn::make('status')
                      ->boolean(),
                 TextColumn::make('role'),
-                TextColumn::make('email_verified_at')
-                    ->label('Verified At')
-                    ->dateTime('d-m-Y'),
+                // TextColumn::make('email_verified_at')
+                //     ->label('Verified At')
+                //     ->dateTime('d-m-Y'),
                 TextColumn::make('created_at')->label('Date Added')
                     ->dateTime('d-m-Y'),
             ])
@@ -127,7 +128,7 @@ class UserResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            DepartmentsRelationManager::class,
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
+use App\Filament\Resources\OrderResource\RelationManagers\ItemsRelationManager;
 use App\Models\Order;
 use Filament\Forms;
 use Filament\Forms\Components\Card;
@@ -37,41 +38,38 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
+                TextInput::make('reference')
+                    ->label('Order Ref.'),
+                TextInput::make('amount')
+                    ->label('Order Amount')
+                    ->numeric()
+                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                TextInput::make('discount')
+                    ->label('Order Discount')
+                    ->numeric()
+                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                TextInput::make('subtotal')
+                    ->label('Subtotal')->numeric()
+                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                TextInput::make('amount_paid')
+                    ->label('Amount Paid')->numeric()
+                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                TextInput::make('balance')->label('Payment Balance')
+                    ->numeric()
+                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                TextInput::make('status')
+                    ->label('Payment Status'),
+                Select::make('customer_id')
+                    ->label('Customer')
+                    ->relationship('customer', 'name'),
+                DateTimePicker::make('paid_at')
+                    ->label('Payment Date'),
+                Select::make('user_id')
+                    ->label('Added By')
+                    ->relationship('staff', 'name'),
+                DateTimePicker::make('created_at')
+                    ->label('Order Date'),
 
-                Section::make('Order Info')->description('Details of the order.')
-                    ->schema([
-                        TextInput::make('reference')->label('Order Ref.'),
-                        TextInput::make('amount')->label('Order Amount')->numeric()
-                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
-                        TextInput::make('discount')->label('Order Discount')->numeric()
-                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
-                        TextInput::make('subtotal')->label('Subtotal')->numeric()
-                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
-                        TextInput::make('amount_paid')->label('Amount Paid')->numeric()
-                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
-                        TextInput::make('balance')->label('Payment Balance')->numeric()
-                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
-                        TextInput::make('status')->label('Payment Status'),
-                        Select::make('customer_id')->label('Customer')
-                            ->relationship('customer', 'name'),
-                        DateTimePicker::make('paid_at')->label('Payment Date'),
-                        Select::make('user_id')->label('Added By')
-                            ->relationship('staff', 'name'),
-                        DateTimePicker::make('created_at')->label('Order Date'),
-                ])->collapsible()->collapsed(),
-                Section::make('Order Items')
-                    ->description('Items included in this order')
-                    ->schema([
-                        Repeater::make('items')->label('Order Items')
-                            ->relationship()
-                            ->schema([
-                                Select::make('stock_id')->label('Item Name')
-                                    ->relationship('stock', 'name'),
-                                TextInput::make('quantity')->label('Quantity')->numeric(),
-                                TextInput::make('amount')->label('Amount')->numeric()
-                                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦'))
-                            ])
-                ])->collapsible()->collapsed()
             ]);
     }
 
@@ -79,25 +77,54 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('Sn')->rowIndex(isFromZero:false),
-                TextColumn::make('reference')->label('Order Ref.')->sortable(),
-                TextColumn::make('customer.name')->label('Customer')->sortable(),
-                TextColumn::make('items_count')->counts('items')->label('Items'),
-                TextColumn::make('amount')->label('Amount')->sortable()->money('ngn', true),
-                TextColumn::make('discount')->label('Discount')->sortable()->money('ngn', true),
-                TextColumn::make('subtotal')->label('Subtotal')->sortable()->money('ngn', true),
-                TextColumn::make('amount_paid')->label('Amount Paid')->sortable()->money('ngn', true),
-                TextColumn::make('balance')->label('Balance')->sortable()->money('ngn', true),
+                TextColumn::make('Sn')
+                    ->rowIndex(isFromZero:false),
+                TextColumn::make('reference')
+                    ->label('Order Ref.')
+                    ->sortable(),
+                TextColumn::make('customer.name')
+                    ->label('Customer')->sortable(),
+                TextColumn::make('items_count')
+                    ->counts('items')
+                    ->label('Items')
+                    ->sortable(),
+                TextColumn::make('amount')
+                    ->label('Total')
+                    ->sortable()
+                    ->money('ngn', true),
+                TextColumn::make('discount')
+                    ->label('Discount')
+                    ->sortable()
+                    ->money('ngn', true),
+                TextColumn::make('subtotal')
+                    ->label('Subtotal')
+                    ->sortable()
+                    ->money('ngn', true),
+                TextColumn::make('amount_paid')
+                    ->label('Amount Paid')
+                    ->sortable()
+                    ->money('ngn', true),
+                TextColumn::make('balance')
+                    ->label('Balance')
+                    ->sortable()
+                    ->money('ngn', true),
                 BadgeColumn::make('status')
                     ->colors([
                         'success' => 'paid',
                         'primary' => 'part paid',
                         'danger' => 'unpaid'
-                    ])->extraAttributes(['class' => 'uppercase'])
+                    ])
+                    ->extraAttributes(['class' => 'uppercase'])
                     ->sortable(),
-                TextColumn::make('staff.name')->label('Entered By')->sortable(),
-                TextColumn::make('paid_at')->label('Date Paid')->sortable()->dateTime('d-m-y'),
-                TextColumn::make('created_at')->label('Order Date')->sortable()->dateTime()
+                TextColumn::make('staff.name')
+                    ->label('Entered By')->sortable(),
+                TextColumn::make('paid_at')
+                    ->label('Date Paid')
+                    ->sortable()->dateTime('d-m-y'),
+                TextColumn::make('created_at')
+                    ->label('Order Date')
+                    ->sortable()
+                    ->dateTime()
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
@@ -139,7 +166,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ItemsRelationManager::class,
         ];
     }
 

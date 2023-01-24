@@ -1,28 +1,24 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\UserResource\RelationManagers;
 
-use App\Filament\Resources\DepartmentResource\Pages;
-use App\Filament\Resources\DepartmentResource\RelationManagers;
-use App\Models\Department;
 use Filament\Forms;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Resources\Form;
-use Filament\Resources\Resource;
-use Filament\Resources\Table;
 use Filament\Tables;
-use Filament\Tables\Actions\ActionGroup;
+use Filament\Resources\Form;
+use Filament\Resources\Table;
+use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Actions\ActionGroup;
 
-class DepartmentResource extends Resource
+class DepartmentsRelationManager extends RelationManager
 {
-    protected static ?string $model = Department::class;
+    protected static string $relationship = 'departments';
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
-    protected static ?string $navigationGroup = 'Staff Mgt';
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Form $form): Form
     {
@@ -51,21 +47,21 @@ class DepartmentResource extends Resource
             ->filters([
                 //
             ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make(),
+                Tables\Actions\AttachAction::make()
+                    ->preloadRecordSelect(),
+            ])
             ->actions([
                 ActionGroup::make([
                     Tables\Actions\EditAction::make(),
+                    Tables\Actions\DetachAction::make(),
                     Tables\Actions\DeleteAction::make(),
                 ])
             ])
             ->bulkActions([
+                Tables\Actions\DetachBulkAction::make(),
                 Tables\Actions\DeleteBulkAction::make(),
             ]);
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ManageDepartments::route('/'),
-        ];
     }
 }
