@@ -9,6 +9,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TextInput\Mask;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Notifications\Notification;
 use Filament\Pages\Actions;
@@ -22,6 +23,8 @@ class EditOrder extends EditRecord
     use HasWizard;
 
     protected static string $resource = OrderResource::class;
+    protected $previousRecordItems = [];
+
 
     protected function beforeSave(): void
     {
@@ -77,11 +80,10 @@ class EditOrder extends EditRecord
             foreach($this->data['items'] as $item){
                 $existing = $item['id'] ?  $record->items()->find($item['id']) : null;
 
+                logger($this->previousRecordItems);
+                // logger($this->data);
+                break;
                 if($existing){
-                    logger($data);
-                    logger($record->items);
-                    break;
-
                     // $difference =  $item['quantity'] - $existing->quantity;
 
                     $existing->update([
@@ -134,58 +136,63 @@ class EditOrder extends EditRecord
     }
 
 
-    protected function getSteps(): array
-    {
-        $record = $this->getRecord();
+    // protected function getSteps(): array
+    // {
+    //     $record = $this->getRecord();
 
 
-        return [
-            Step::make('Order Items')
-                ->description('Add items to this order')
-                ->schema([
-                    Repeater::make('items')->label('Add Order Items')
-                        ->relationship()
-                        ->schema([
-                        Select::make('stock_id')->label('Select Item')
-                            ->options(Stock::all()->pluck('name', 'id'))
-                            ->searchable()->placeholder('Select Item'),
-                        TextInput::make('quantity')->numeric()->label('Quantity')
-                            ->placeholder('Quantity')->minValue(1),
-                        TextInput::make('amount')->numeric()->label('Amount')
-                            ->placeholder('Amount')->disabled()
-                            ->dehydrated(),
-                        TextInput::make('id')->numeric()->hidden()
-                    ])->collapsible()
-                        ->createItemButtonLabel('Add Item')
-                ]),
-            Step::make('Order Details')
-                ->description('Provide the order details')
-                ->schema([
-                    Select::make('customer_id')->label('Customer')
-                        ->placeholder('Select Customer')
-                        ->options(Customer::all()->pluck('name', 'id'))
-                        ->searchable(),
-                    TextInput::make('amount')->label('Amount')->numeric()
-                        ->placeholder('Amount')->default($record->amount)
-                        ->disabled()->dehydrated(),
-                    TextInput::make('discount')->label('Discount')->numeric()
-                        ->placeholder('Discount')->helperText('Enter discount amount if any.')->default($record->discount),
-                    TextInput::make('subtotal')->label('Subtotal')->numeric()
-                        ->placeholder('Discount')->default($record->subtotal)
-                        ->disabled()->dehydrated(),
-                    TextInput::make('amount_paid')->label('Amount Paid')->numeric()
-                        ->placeholder('Amount Paid')->helperText('Enter the amount if the customer has paid')->default($record->amount_paid),
-                    Select::make('status')->label('Payment Status')->required()
-                        ->placeholder('Select Status')->default($record->status)->options([
-                            'paid' => 'Paid',
-                            'part paid' => 'Part Payment',
-                            'unpaid' => 'Yet to Pay'
-                        ]),
-                    DateTimePicker::make('paid_at')->label('Payment Date')
-                        ->placeholder('Enter Date')->default($record->paid_at)
-                ])
-        ];
-    }
+    //     return [
+    //         Step::make('Order Items')
+    //             ->description('Add items to this order')
+    //             ->schema([
+    //                 Repeater::make('items')->label('Add Order Items')
+    //                     ->relationship()
+    //                     ->schema([
+    //                     Select::make('stock_id')->label('Select Item')
+    //                         ->options(Stock::all()->pluck('name', 'id'))
+    //                         ->searchable()->placeholder('Select Item'),
+    //                     TextInput::make('quantity')->numeric()->label('Quantity')
+    //                         ->placeholder('Quantity')->minValue(1),
+    //                     TextInput::make('amount')->numeric()->label('Amount')
+    //                         ->placeholder('Amount')->disabled()
+    //                         ->dehydrated()
+    //                         ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+    //                     TextInput::make('id')->numeric()->hidden()
+    //                 ])->collapsible()
+    //                     ->createItemButtonLabel('Add Item')
+    //             ]),
+    //         Step::make('Order Details')
+    //             ->description('Provide the order details')
+    //             ->schema([
+    //                 Select::make('customer_id')->label('Customer')
+    //                     ->placeholder('Select Customer')
+    //                     ->options(Customer::all()->pluck('name', 'id'))
+    //                     ->searchable(),
+    //                 TextInput::make('amount')->label('Amount')->numeric()
+    //                     ->placeholder('Amount')->default($record->amount)
+    //                     ->disabled()->dehydrated()
+    //                     ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+    //                 TextInput::make('discount')->label('Discount')->numeric()
+    //                     ->placeholder('Discount')->helperText('Enter discount amount if any.')->default($record->discount)
+    //                     ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+    //                 TextInput::make('subtotal')->label('Subtotal')->numeric()
+    //                     ->placeholder('Subtotal')->default($record->subtotal)
+    //                     ->disabled()->dehydrated()
+    //                     ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+    //                 TextInput::make('amount_paid')->label('Amount Paid')->numeric()
+    //                     ->placeholder('Amount Paid')->helperText('Enter the amount if the customer has paid')->default($record->amount_paid)
+    //                     ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+    //                 Select::make('status')->label('Payment Status')->required()
+    //                     ->placeholder('Select Status')->default($record->status)->options([
+    //                         'paid' => 'Paid',
+    //                         'part paid' => 'Part Payment',
+    //                         'unpaid' => 'Yet to Pay'
+    //                     ]),
+    //                 DateTimePicker::make('paid_at')->label('Payment Date')
+    //                     ->placeholder('Enter Date')->default($record->paid_at)
+    //             ])
+    //     ];
+    // }
 
     protected function getActions(): array
     {

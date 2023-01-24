@@ -6,12 +6,15 @@ use App\Filament\Resources\OrderResource;
 use App\Models\Customer;
 use App\Models\Stock;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TextInput\Mask;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Notifications\Notification;
 use Filament\Pages\Actions;
+use Filament\Resources\Form;
 use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -19,7 +22,7 @@ use Illuminate\Support\Str;
 
 class CreateOrder extends CreateRecord
 {
-    use HasWizard;
+    // use HasWizard;
 
     protected static string $resource = OrderResource::class;
 
@@ -63,11 +66,12 @@ class CreateOrder extends CreateRecord
             'customer_id' => $data['customer_id'],
             'amount' => $amount,
             'discount' => $data['discount'],
-            'status' => $data['status'] ?? 'unpaid',
+            'status' => $this->paymentStatus($amount_paid, $subtotal, $data['status']),
             'amount_paid' => $amount_paid,
             'paid_at' => $amount_paid > 0 ? now() : null,
             'subtotal' => $subtotal,
-            'balance' => $subtotal - $amount_paid
+            'balance' => $subtotal - $amount_paid,
+            'paid_at' => $amount_paid >= 1 ? now() : null
         ]);
 
         if(count($data['items']) > 0){
@@ -84,13 +88,12 @@ class CreateOrder extends CreateRecord
         return $order;
     }
 
-    protected function getSteps(): array
+    protected function form(Form $form): Form
     {
-        return [
-            Step::make('items')
-            ->description('Add items to this order')
-            ->schema([
-                Repeater::make('items')->label('Add Order Items')
+        return $form->schema([
+            Grid::make()
+                ->schema([
+                    Repeater::make('items')->label('Add Order Items')
                     ->schema([
                     Select::make('stock_id')->label('Select Item')
                         ->options(Stock::all()->pluck('name', 'id'))
@@ -100,16 +103,27 @@ class CreateOrder extends CreateRecord
                         ->placeholder('Quantity')
                 ])->collapsible()
                 ->createItemButtonLabel('Add Item')
+                ->columns(2)
             ]),
-            Step::make('Order Details')
-                ->description('Provide the order details')
+            Grid::make()
                 ->schema([
                     Select::make('customer_id')->label('Customer')
                         ->placeholder('Select Customer')
-                        ->options(Customer::all()->pluck('name', 'id'))
-                        ->searchable(),
-                    TextInput::make('amount_paid')->label('Amount Paid')->numeric()
-                        ->placeholder('Amount Paid')->helperText('Enter the amount if the customer has paid')->default(0),
+                        ->relationship('customer', 'name')
+                        ->preload()
+                        ->searchable()
+                        ->createOptionForm([
+                            TextInput::make('name')->required()
+                                ->maxLength(255),
+                            TextInput::make('phone')
+                                ->unique('customers', 'phone')
+                        ]),
+                    TextInput::make('amount_paid')
+                        ->label('Amount Paid')->numeric()
+                        ->placeholder('Amount Paid')
+                        ->helperText('Enter the amount if the customer has paid')
+                        ->default(0)
+                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
                     Select::make('status')->label('Payment Status')->required()
                         ->placeholder('Select Status')->default('unpaid')->options([
                             'paid' => 'Paid',
@@ -117,11 +131,12 @@ class CreateOrder extends CreateRecord
                             'unpaid' => 'Yet to Pay'
                         ]),
                     TextInput::make('discount')->label('Discount')->numeric()
-                        ->placeholder('Discount')->helperText('Enter discount amount if any.')->default(0),
-                    DateTimePicker::make('paid_at')->label('Payment Date')
-                        ->placeholder('Enter Date')
+                        ->placeholder('Discount')
+                        ->helperText('Enter discount amount if any.')
+                        ->default(0)
+                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦'))
                 ])
-        ];
+        ]);
     }
 
     protected function calculateAmount(array $data): float
@@ -132,5 +147,22 @@ class CreateOrder extends CreateRecord
         }
 
         return (float)$amount;
+    }
+
+    protected function paymentStatus(float $amount_paid, float $subtotal, string $status): string
+    {
+        if($amount_paid >= 1 && $amount_paid < $subtotal){
+            return 'part paid';
+        }
+
+        if($amount_paid >= $subtotal){
+            return 'paid';
+        }
+
+        if($amount_paid < 1){
+            return 'unpaid';
+        }
+
+        return $status;
     }
 }

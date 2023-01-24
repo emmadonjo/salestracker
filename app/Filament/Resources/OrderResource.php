@@ -13,6 +13,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TextInput\Mask;
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
@@ -40,11 +41,16 @@ class OrderResource extends Resource
                 Section::make('Order Info')->description('Details of the order.')
                     ->schema([
                         TextInput::make('reference')->label('Order Ref.'),
-                        TextInput::make('amount')->label('Order Amount')->numeric(),
-                        TextInput::make('discount')->label('Order Discount')->numeric(),
-                        TextInput::make('subtotal')->label('Subtotal')->numeric(),
-                        TextInput::make('amount_paid')->label('Amount Paid')->numeric(),
-                        TextInput::make('balance')->label('Payment Balance')->numeric(),
+                        TextInput::make('amount')->label('Order Amount')->numeric()
+                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        TextInput::make('discount')->label('Order Discount')->numeric()
+                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        TextInput::make('subtotal')->label('Subtotal')->numeric()
+                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        TextInput::make('amount_paid')->label('Amount Paid')->numeric()
+                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        TextInput::make('balance')->label('Payment Balance')->numeric()
+                            ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
                         TextInput::make('status')->label('Payment Status'),
                         Select::make('customer_id')->label('Customer')
                             ->relationship('customer', 'name'),
@@ -63,6 +69,7 @@ class OrderResource extends Resource
                                     ->relationship('stock', 'name'),
                                 TextInput::make('quantity')->label('Quantity')->numeric(),
                                 TextInput::make('amount')->label('Amount')->numeric()
+                                    ->mask(fn(Mask $mask) => $mask->money(prefix:'₦'))
                             ])
                 ])->collapsible()->collapsed()
             ]);
