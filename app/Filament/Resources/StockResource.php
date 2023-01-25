@@ -40,7 +40,17 @@ class StockResource extends Resource
     {
         return $form
             ->schema([
-                FileUpload::make('photo')->directory('uploads/stocks')->maxSize(2048),
+                FileUpload::make('photo')
+                ->directory('uploads/users/profile-photos')
+                ->maxSize(2048)->label('Photo')
+                ->image()
+                ->imagePreviewHeight('160')
+                ->loadingIndicatorPosition('left')
+                ->panelAspectRatio('4:1')
+                ->panelLayout('integrated')
+                ->removeUploadedFileButtonPosition('right')
+                ->uploadButtonPosition('left')
+                ->uploadProgressIndicatorPosition('left'),
                 Select::make('category_id')
                     ->relationship('category', 'name')->label('Select Category')
                     ->required()->placeholder('Select Category'),
@@ -65,6 +75,7 @@ class StockResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->poll('10s')
             ->columns([
                 TextColumn::make('sn')->rowIndex(),
                 ImageColumn::make('photo')->label('Image'),

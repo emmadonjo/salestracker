@@ -3,11 +3,7 @@
 namespace App\Filament\Resources\OrderResource\Pages;
 
 use App\Filament\Resources\OrderResource;
-use App\Models\Customer;
-use App\Models\Order;
 use App\Models\Stock;
-use Closure;
-use Filament\Forms\Components\Component;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
@@ -19,38 +15,49 @@ use Filament\Pages\Actions;
 use Filament\Resources\Form;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
-use Livewire\Component as Livewire;
+use Illuminate\Support\Facades\DB;
 
 class EditOrder extends EditRecord
 {
 
     protected static string $resource = OrderResource::class;
 
+    protected function beforeFill(): void
+    {
+        $items = $this->record->items->map(function($item){
+            return [
+                'order_id' => $this->record->id,
+                'item_id' => $item->id,
+                'quantity' => $item->quantity
+            ];
+        })->toArray();
+
+        DB::table('item_tracker')->insert($items);
+    }
+
     protected function beforeSave(): void
     {
-        foreach($this->data['items'] as $item){
+        foreach ($this->data['items'] as $item) {
             $record = $this->record;
 
-            if($existing = $record->items->where('stock_id', $item['stock_id'])->first()){
+            if ($existing = $record->items->where('stock_id', $item['stock_id'])->first()) {
                 $increment = $item['quantity'] - $existing->quantity;
 
-                if($increment > $existing->stock->quantity){
+                if ($increment > $existing->stock->quantity) {
                     Notification::make()->danger()
                         ->title('Not Enough Quantity')
-                        ->body($existing->stock->name .' is out of stock.')
+                        ->body($existing->stock->name . ' is out of stock.')
                         ->send();
 
-                        $this->halt();
+                    $this->halt();
                 }
-
-            }
-            else{
+            } else {
                 $stock = Stock::find($item['stock_id']);
-                if($item['quantity'] > $stock->quantity){
+                if ($item['quantity'] > $stock->quantity) {
                     Notification::make()->danger()
-                    ->title('Not Enough Quantity')
-                    ->body($stock->name .' is out of stock.')
-                    ->send();
+                        ->title('Not Enough Quantity')
+                        ->body($stock->name . ' is out of stock.')
+                        ->send();
 
                     $this->halt();
                 }
@@ -60,8 +67,6 @@ class EditOrder extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        logger($this->fo);
-        logger($this->data);
         $amount_paid = $data['amount_paid'] ?? $record->amount_paid;
         $amount = $this->calculateAmount($this->data['items']);
         $subtotal = $amount - $data['discount'];
@@ -77,30 +82,39 @@ class EditOrder extends EditRecord
             'subtotal' => $subtotal,
             'balance' => $balance,
         ]);
+        if (count($this->data['items']) > 0) {
+            foreach ($this->data['items'] as $item) {
+                $tracker = $item['id']
+                ? DB::table('item_tracker')
+                    ->where('order_id', $this->record->id)
+                    ->where('item_id', $item['id'])
+                    ->first()
+                : null;
 
-        if(count($this->data['items']) > 0){
-            foreach($this->data['items'] as $item){
-                $existing = $item['id'] ?  $record->items()->find($item['id']) : null;
-                break;
-                if($existing){
-                    // $difference =  $item['quantity'] - $existing->quantity;
+                if ($tracker) {
+                    $difference =  $item['quantity'] - $tracker->quantity;
 
+                    $existing = $this->record->items->find($tracker->item_id);
                     $existing->update([
                         'quantity' => $item['quantity'],
                         'amount' => $item['quantity'] * $existing->stock->price
                     ]);
 
-                    // if($difference > 0){
-                    //     $this->decrementStock($existing->stock, $difference);
-                    // }
+                    DB::table('item_tracker')
+                        ->where('order_id', $this->record->id)
+                        ->where('item_id', $existing->id)
+                        ->update(['quantity' => $item['quantity']]);
 
-                    // if($difference < 0){
-                    //     $this->incrementStock($existing->stock, abs($difference));
-                    // }
-                }
-                else{
+                    if($difference > 0){
+                        $this->decrementStock($existing->stock, $difference);
+                    }
+
+                    if($difference < 0){
+                        $this->incrementStock($existing->stock, abs($difference));
+                    }
+                } else {
                     $stock = Stock::find($item['stock_id']);
-                    $item['amount'] = $stock->price * $data['quantity'];
+                    $item['amount'] = $stock->price * $item['quantity'];
                     $record->items()->create($item);
 
                     $this->decrementStock($stock, $item['quantity']);
@@ -115,7 +129,7 @@ class EditOrder extends EditRecord
     protected function calculateAmount(array $data): float
     {
         $amount = 0;
-        foreach($data as $item){
+        foreach ($data as $item) {
             $amount += Stock::find($item['stock_id'])->price * $item['quantity'];
         }
 
@@ -139,13 +153,13 @@ class EditOrder extends EditRecord
     {
         $items = $this->data['items'] ?? [];
 
-        if(count($items) < 1){
+        if (count($items) < 1) {
             return;
         }
 
         $total = 0;
 
-        foreach($items as $item){
+        foreach ($items as $item) {
             $stock = Stock::find($item['stock_id']);
 
             $total += $item['quantity'] * $stock->price;
@@ -156,7 +170,6 @@ class EditOrder extends EditRecord
 
     public function getSubtotal(): float
     {
-
     }
 
     public function getBalance(): float
@@ -174,20 +187,20 @@ class EditOrder extends EditRecord
                         ->label('Add Order Items')
                         ->relationship('items')
                         ->schema([
-                        Select::make('stock_id')
-                            ->label('Select Item')
-                            ->options(Stock::all()->pluck('name', 'id'))
-                            ->searchable()
-                            ->placeholder('Select Item'),
-                        TextInput::make('quantity')
-                            ->numeric()
-                            ->label('Quantity')
-                            ->minValue(1)->default(1)
-                            ->placeholder('Quantity')
-                ])->collapsible()
-                ->createItemButtonLabel('Add Item')
-                ->columns(2)
-            ]),
+                            Select::make('stock_id')
+                                ->label('Select Item')
+                                ->options(Stock::all()->pluck('name', 'id'))
+                                ->searchable()
+                                ->placeholder('Select Item'),
+                            TextInput::make('quantity')
+                                ->numeric()
+                                ->label('Quantity')
+                                ->minValue(1)->default(1)
+                                ->placeholder('Quantity')
+                        ])->collapsible()
+                        ->createItemButtonLabel('Add Item')
+                        ->columns(2)
+                ]),
             Grid::make()
                 ->schema([
                     Select::make('customer_id')->label('Customer')
@@ -199,31 +212,31 @@ class EditOrder extends EditRecord
                         ->placeholder('Total Amount')
                         ->disabled()
                         ->helperText("Updated after submission if item(s) had changeds.")
-                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        ->mask(fn (Mask $mask) => $mask->money(prefix: '₦')),
                     TextInput::make('discount')->label('Discount')->numeric()
                         ->placeholder('Discount')
                         ->helperText('Enter discount amount if any.')
                         ->default(0)
-                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        ->mask(fn (Mask $mask) => $mask->money(prefix: '₦')),
                     TextInput::make('subtotal')->label('Subtotal')->numeric()
                         ->placeholder('Subtotal')
                         ->default(0)
                         ->disabled()
                         ->helperText("Updated after submission if item(s) had changeds.")
-                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        ->mask(fn (Mask $mask) => $mask->money(prefix: '₦')),
                     TextInput::make('amount_paid')
                         ->label('Amount Paid')->numeric()
                         ->placeholder('Amount Paid')
                         ->helperText('Enter the amount if the customer has paid')
                         ->default(0)
-                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        ->mask(fn (Mask $mask) => $mask->money(prefix: '₦')),
                     TextInput::make('balance')
                         ->label('Balance')->numeric()
                         ->placeholder('Balance')
                         ->default(0)
                         ->disabled()
                         ->helperText("Updated after submission if item(s) had changeds.")
-                        ->mask(fn(Mask $mask) => $mask->money(prefix:'₦')),
+                        ->mask(fn (Mask $mask) => $mask->money(prefix: '₦')),
                     Select::make('status')->label('Payment Status')->required()
                         ->placeholder('Select Status')->default('unpaid')->options([
                             'paid' => 'Paid',
@@ -246,15 +259,15 @@ class EditOrder extends EditRecord
 
     protected function paymentStatus(float $amount_paid, float $subtotal, string $status): string
     {
-        if($amount_paid >= 1 && $amount_paid < $subtotal){
+        if ($amount_paid >= 1 && $amount_paid < $subtotal) {
             return 'part paid';
         }
 
-        if($amount_paid >= $subtotal){
+        if ($amount_paid >= $subtotal) {
             return 'paid';
         }
 
-        if($amount_paid < 1){
+        if ($amount_paid < 1) {
             return 'unpaid';
         }
 

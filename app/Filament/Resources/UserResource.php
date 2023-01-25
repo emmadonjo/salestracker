@@ -45,7 +45,7 @@ class UserResource extends Resource
                     ->image()
                     ->imagePreviewHeight('250')
                     ->loadingIndicatorPosition('left')
-                    ->panelAspectRatio('2:1')
+                    ->panelAspectRatio('4:1')
                     ->panelLayout('integrated')
                     ->removeUploadedFileButtonPosition('right')
                     ->uploadButtonPosition('left')
