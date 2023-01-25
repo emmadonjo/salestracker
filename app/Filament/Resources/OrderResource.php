@@ -11,6 +11,7 @@ use Filament\Resources\Table;
 use Filament\Resources\Resource;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Repeater;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\ActionGroup;
@@ -35,6 +36,23 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
+                Repeater::make('items')
+                    ->label('Add Order Items')
+                    ->relationship('items')
+                    ->schema([
+                        Select::make('stock_id')
+                            ->relationship('stock', 'name')
+                            ->preload()
+                            ->label('Select Item')
+                            ->placeholder('Select Item'),
+                        TextInput::make('quantity')
+                            ->numeric()
+                            ->label('Quantity')
+                            ->minValue(1)->default(1)
+                            ->placeholder('Quantity')
+                    ])->collapsible()
+                    ->createItemButtonLabel('Add Item')
+                    ->columns(2),
                 TextInput::make('reference')
                     ->label('Order Ref.')
                     ->default(Str::lower(Str::random()))
